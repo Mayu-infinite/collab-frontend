@@ -37,6 +37,16 @@ export default function Login() {
       />
 
       <button onClick={handleLogin}>Login</button>
+      <p style={{ marginTop: '10px' }}>
+  New user?{' '}
+  <span
+    style={{ color: '#3498db', cursor: 'pointer' }}
+    onClick={() => navigate('/signup')}
+  >
+    Signup
+  </span>
+</p>
+
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
     </div>
