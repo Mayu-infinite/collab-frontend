@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { login } from '../api/auth';
+import { useNavigate } from 'react-router-dom';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const navigate = useNavigate(); // 👈 add this
 
   const handleLogin = async () => {
     try {
       setError('');
       await login(email, password);
-      alert('Login successful');
+      navigate('/'); // 👈 redirect to dashboard
     } catch {
       setError('Invalid credentials');
     }
@@ -25,7 +27,6 @@ export default function Login() {
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        style={{ width: '100%', marginBottom: '10px' }}
       />
 
       <input
@@ -33,7 +34,6 @@ export default function Login() {
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        style={{ width: '100%', marginBottom: '10px' }}
       />
 
       <button onClick={handleLogin}>Login</button>
