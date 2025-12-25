@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
-import { logout } from '../utils/auth';
+import PageContainer from '../components/PageContainer';
+import './Dashboard.css';
 
 type Document = {
   id: string;
@@ -26,91 +27,74 @@ export default function Dashboard() {
     navigate(`/documents/${res.data.id}`);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   return (
-    <div
-      style={{
-        maxWidth: '800px',
-        margin: '40px auto',
-        padding: '20px',
-        fontFamily: 'Arial, sans-serif',
-      }}
-    >
-      {/* Header */}
+    <PageContainer>
       <div
+        className="dashboard-layout"
         style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '30px',
+          display: 'grid',
+          gridTemplateColumns: '1fr',
+          gap: '16px', // reduced spacing
         }}
       >
-        <h2 style={{ margin: 0 }}>My Documents</h2>
-
-        <button
-          onClick={handleLogout}
+        {/* Header / Sidebar */}
+        <div
+          className="dashboard-sidebar"
           style={{
-            padding: '8px 14px',
-            backgroundColor: '#e74c3c',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
+            borderRadius: '10px',
+            padding: '16px',
           }}
         >
-          Logout
-        </button>
-      </div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <h3 className="dashboard-title" style={{ margin: 0 }}>
+              My Documents
+            </h3>
 
-      {/* Create Button */}
-      <button
-        onClick={createDocument}
-        style={{
-          padding: '10px 16px',
-          backgroundColor: '#3498db',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          marginBottom: '20px',
-        }}
-      >
-        + New Document
-      </button>
+            <button
+              onClick={createDocument}
+              className="dashboard-btn-primary"
+            >
+              + New
+            </button>
+          </div>
+        </div>
 
-      {/* Documents List */}
-      {documents.length === 0 ? (
-        <p style={{ color: '#777' }}>No documents yet.</p>
-      ) : (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
+        {/* Documents Grid */}
+        <div
+          className="dashboard-grid"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+            gap: '16px',
+          }}
+        >
           {documents.map((doc) => (
-            <li
+            <div
               key={doc.id}
               onClick={() => navigate(`/documents/${doc.id}`)}
+              className="dashboard-card"
               style={{
-                padding: '12px 16px',
-                border: '1px solid #ddd',
-                borderRadius: '6px',
-                marginBottom: '10px',
+                borderRadius: '12px',
+                padding: '16px',
                 cursor: 'pointer',
-                transition: 'background 0.2s',
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = '#f5f5f5')
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = 'white')
-              }
             >
-              {doc.title}
-            </li>
+              <h4 className="dashboard-card-title" style={{ margin: 0 }}>
+                {doc.title}
+              </h4>
+              <p className="dashboard-card-sub">
+                Click to edit
+              </p>
+            </div>
           ))}
-        </ul>
-      )}
-    </div>
+        </div>
+      </div>
+    </PageContainer>
   );
 }

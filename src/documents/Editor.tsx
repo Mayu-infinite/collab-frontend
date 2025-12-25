@@ -1,45 +1,93 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api/axios';
+import PageContainer from '../components/PageContainer';
+import './Editor.css';
 
 export default function Editor() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
+
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
 
+  const lastSaved = useRef({ title: '', content: '' });
+
+  /* Initial load */
   useEffect(() => {
+    if (!id) return;
+
     api.get(`/documents/${id}`).then((res) => {
       setTitle(res.data.title);
       setContent(res.data.content || '');
+      lastSaved.current = {
+        title: res.data.title,
+        content: res.data.content || '',
+      };
+      setLoading(false);
     });
   }, [id]);
 
-  const saveDocument = async () => {
-    setSaving(true);
-    await api.put(`/documents/${id}`, { title, content });
-    setSaving(false);
-    alert('Saved');
-  };
+  /* AUTOSAVE */
+  useEffect(() => {
+    if (!id || loading) return;
+
+    const interval = setInterval(async () => {
+      if (
+        title === lastSaved.current.title &&
+        content === lastSaved.current.content
+      ) {
+        return;
+      }
+
+      try {
+        setSaveStatus('saving');
+        await api.put(`/documents/${id}`, { title, content });
+        lastSaved.current = { title, content };
+        setSaveStatus('saved');
+      } catch (err) {
+        console.error('Autosave failed', err);
+      }
+    }, 3000); // every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [title, content, id, loading]);
+
+  if (loading) {
+    return (
+      <PageContainer>
+        <p className="editor-loading">Loading document...</p>
+      </PageContainer>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: '700px', margin: '40px auto' }}>
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        style={{ width: '100%', fontSize: '20px', marginBottom: '10px' }}
-      />
+    <PageContainer>
+      <div className="editor-container">
+        {/* Title */}
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Untitled document"
+          className="editor-title"
+        />
 
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        rows={15}
-        style={{ width: '100%', marginBottom: '10px' }}
-      />
+        {/* Content */}
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Start writing here..."
+          className="editor-content"
+        />
 
-      <button onClick={saveDocument} disabled={saving}>
-        {saving ? 'Saving...' : 'Save'}
-      </button>
-    </div>
+        {/* Status */}
+        <div className="editor-actions">
+          <span className="editor-status">
+            {saveStatus === 'saving' ? 'Saving…' : 'Saved'}
+          </span>
+        </div>
+      </div>
+    </PageContainer>
   );
 }

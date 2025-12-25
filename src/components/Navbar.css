@@ -1,0 +1,97 @@
+/* Navbar shell */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #ffffff;
+}
+
+html.dark .navbar {
+  background-color: #111827;
+  border-color: #374151;
+}
+
+/* Inner container */
+.navbar-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 10px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Title */
+.navbar-title {
+  font-size: 45px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #111827;
+}
+
+html.dark .navbar-title {
+  color: #f9fafb;
+}
+
+/* Right actions */
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Theme toggle */
+.theme-toggle {
+  border: 1px solid #d1d5db;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+html.dark .theme-toggle {
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+/* Buttons */
+.nav-button {
+  padding: 8px 14px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+}
+
+/* Login */
+.nav-button-outline {
+  background: transparent;
+  border: 1px solid #d1d5db;
+  color: #111827;
+}
+
+html.dark .nav-button-outline {
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+/* Signup */
+.nav-button-primary {
+  background-color: #4f46e5;
+  color: #ffffff;
+}
+
+.nav-button-primary:hover {
+  background-color: #4338ca;
+}
+
+/* Logout */
+.nav-button-danger {
+  background-color: #ef4444;
+  color: #ffffff;
+}
+
+.nav-button-danger:hover {
+  background-color: #dc2626;
+}
