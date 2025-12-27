@@ -16,9 +16,6 @@ export default function WelcomePage() {
       <main className="flex flex-col items-center">
         {/* Hero Section */}
         <section className="container px-6 pt-24 pb-12 text-center md:pt-32">
-          <Badge variant="secondary" className="mb-4 rounded-full px-4 py-1">
-            Now in Beta — Version 2.0
-          </Badge>
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-6xl md:text-7xl">
             Where teams build <br />
             <span className="text-primary">the future together.</span>
@@ -31,9 +28,6 @@ export default function WelcomePage() {
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Button size="lg" className="h-12 px-8 text-base">
               Start Building Free <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button size="lg" variant="outline" className="h-12 px-8 text-base">
-              View Demo
             </Button>
           </div>
         </section>

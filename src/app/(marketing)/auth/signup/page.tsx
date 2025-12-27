@@ -1,4 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,6 +17,45 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function SignUpPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+
+    const payload = {
+      name: formData.get("name"),
+      email: formData.get("email"),
+      password: formData.get("password"),
+    };
+
+    try {
+      const res = await fetch("http://localhost:3002/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Signup failed");
+      }
+
+      alert("Signup successful!");
+      router.push("/auth/login");
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="flex h-[calc(100vh-4rem)] items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -20,24 +64,44 @@ export default function SignUpPage() {
             Create an account
           </CardTitle>
           <CardDescription>
-            Enter your email below to create your account
+            Enter your details below to create your account
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="name">Full Name</Label>
-            <Input id="name" placeholder="John Doe" />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="m@example.com" />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" />
-          </div>
-          <Button className="w-full">Create account</Button>
-        </CardContent>
+
+        <form onSubmit={handleSubmit}>
+          <CardContent className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input id="name" name="name" placeholder="John Doe" required />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="m@example.com"
+                required
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                required
+              />
+            </div>
+
+            <Button className="w-full" type="submit" disabled={loading}>
+              {loading ? "Creating..." : "Create account"}
+            </Button>
+          </CardContent>
+        </form>
+
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
             Already have an account?{" "}
