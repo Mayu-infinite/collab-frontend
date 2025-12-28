@@ -1,4 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,61 +15,91 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Github } from "lucide-react"; // Make sure to import icon
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+
+    const payload = {
+      email: formData.get("email"),
+      password: formData.get("password"),
+    };
+
+    try {
+      const res = await fetch("http://localhost:3002/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      // Store JWT
+      localStorage.setItem("token", data.accessToken);
+
+      alert("Login successful!");
+      router.push("/dashboard"); // change if needed
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="flex h-[calc(100vh-4rem)] items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
           <CardDescription>
-            Enter your email to sign in to your account
+            Enter your email and password to login
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4">
-          <div className="grid grid-cols-2 gap-6">
-            <Button variant="outline">
-              <Github className="mr-2 h-4 w-4" />
-              Github
-            </Button>
-            <Button variant="outline">
-              <svg
-                role="img"
-                viewBox="0 0 24 24"
-                className="mr-2 h-4 w-4"
-                fill="currentColor"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <title>Google</title>
-                <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
-              </svg>
-              Google
-            </Button>
-          </div>
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+
+        <form onSubmit={handleSubmit}>
+          <CardContent className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="m@example.com"
+                required
+              />
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
-              </span>
+
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                required
+              />
             </div>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="m@example.com" />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" />
-          </div>
-          <Button className="w-full">Sign In</Button>
-        </CardContent>
+
+            <Button className="w-full" type="submit" disabled={loading}>
+              {loading ? "Logging in..." : "Login"}
+            </Button>
+          </CardContent>
+        </form>
+
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link href="/auth/signup" className="text-primary hover:underline">
               Sign up
             </Link>
