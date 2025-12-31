@@ -1,19 +1,36 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation"; 
-import { api } from "@/lib/axios"; 
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Plus, Search, FileText, Clock, AlertCircle, Sparkles, 
-  Zap, History, MousePointer2, Star
+import {
+  Plus,
+  Search,
+  FileText,
+  Clock,
+  AlertCircle,
+  Sparkles,
+  Zap,
+  History,
+  MousePointer2,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import NewNoteDialog from "@/components/new-note-dialog";
+import { getUser } from "@/services/user/service";
+import { toast } from "sonner";
 
 type Note = {
   id: string;
@@ -27,43 +44,56 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  
-  const router = useRouter(); 
+
+  const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     async function fetchNotes() {
       try {
-        setLoading(true);
         const res = await api.get("/documents");
         setNotes(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
         setError("Could not load notes. Is the backend running?");
-      } finally {
-        setLoading(false);
       }
     }
+
+    async function fetchUser() {
+      try {
+        const res = await getUser();
+        if (!res) {
+          toast.error("User not logged in");
+          router.push("/auth/login");
+        }
+      } catch (error: any) {
+        toast.error(error.message);
+        router.push("/auth/login");
+      }
+    }
+    setLoading(true);
     fetchNotes();
+    fetchUser();
+    setLoading(false);
   }, []);
 
-  const handleCreateNote = async () => {
-    try {
-      setIsCreating(true);
-      const res = await api.post("/documents", {
-        title: "Untitled Document",
-        content: ""
-      });
-      // Routing to the dynamic document path
-      router.push(`/dashboard/documents/${res.data.id}`);
-    } catch (err) {
-      console.error("Failed to create note", err);
-    } finally {
-      setIsCreating(false);
-    }
-  };
+  // const handleCreateNote = async () => {
+  //   try {
+  //     setIsCreating(true);
+  //     const res = await api.post("/documents", {
+  //       title: "Untitled Document",
+  //       content: "",
+  //     });
+  //     // Routing to the dynamic document path
+  //     router.push(`/dashboard/documents/${res.data.id}`);
+  //   } catch (err) {
+  //     console.error("Failed to create note", err);
+  //   } finally {
+  //     setIsCreating(false);
+  //   }
+  // };
 
   const filteredNotes = notes.filter((note) =>
-    note.title.toLowerCase().includes(searchQuery.toLowerCase())
+    note.title.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -71,10 +101,16 @@ export default function DashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div className="space-y-1">
           <div className="flex items-center gap-2 mb-2">
-            <Badge variant="outline" className="rounded-full border-primary/30 text-primary bg-primary/5 px-3">
+            <Badge
+              variant="outline"
+              className="rounded-full border-primary/30 text-primary bg-primary/5 px-3"
+            >
               <Sparkles className="h-3 w-3 mr-1" /> 2025 Workspace
             </Badge>
-            <Badge variant="outline" className="rounded-full border-muted-foreground/20 text-muted-foreground px-3">
+            <Badge
+              variant="outline"
+              className="rounded-full border-muted-foreground/20 text-muted-foreground px-3"
+            >
               Free Tier
             </Badge>
           </div>
@@ -87,18 +123,23 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-3">
-           <Button variant="outline" size="lg" className="rounded-xl border-dashed">
-             <Star className="h-4 w-4 mr-2" /> Favorites
-           </Button>
-           <Button 
-             onClick={handleCreateNote} 
-             disabled={isCreating}
-             size="lg" 
-             className="rounded-xl shadow-lg shadow-primary/20 gap-2 px-6"
-           >
-             <Plus className="h-5 w-5" /> 
-             {isCreating ? "Creating..." : "New Note"}
-           </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            className="rounded-xl border-dashed"
+          >
+            <Star className="h-4 w-4 mr-2" /> Favorites
+          </Button>
+          {/* <Button  */}
+          {/*   onClick={handleCreateNote}  */}
+          {/*   disabled={isCreating} */}
+          {/*   size="lg"  */}
+          {/*   className="rounded-xl shadow-lg shadow-primary/20 gap-2 px-6" */}
+          {/* > */}
+          {/*   <Plus className="h-5 w-5" />  */}
+          {/*   {isCreating ? "Creating..." : "New Note"} */}
+          {/* </Button> */}
+          <NewNoteDialog buttonStyles="rounded-xl shadow-lg shadow-primary/20 gap-2 px-6" />
         </div>
       </div>
 
@@ -107,9 +148,24 @@ export default function DashboardPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/30 p-2 rounded-2xl border border-border/50">
             <Tabs defaultValue="all" className="w-full sm:w-auto">
               <TabsList className="bg-transparent gap-1">
-                <TabsTrigger value="all" className="rounded-lg data-[state=active]:bg-background shadow-none">All Notes</TabsTrigger>
-                <TabsTrigger value="recent" className="rounded-lg data-[state=active]:bg-background shadow-none">Recent</TabsTrigger>
-                <TabsTrigger value="shared" className="rounded-lg data-[state=active]:bg-background shadow-none">Shared</TabsTrigger>
+                <TabsTrigger
+                  value="all"
+                  className="rounded-lg data-[state=active]:bg-background shadow-none"
+                >
+                  All Notes
+                </TabsTrigger>
+                <TabsTrigger
+                  value="recent"
+                  className="rounded-lg data-[state=active]:bg-background shadow-none"
+                >
+                  Recent
+                </TabsTrigger>
+                <TabsTrigger
+                  value="shared"
+                  className="rounded-lg data-[state=active]:bg-background shadow-none"
+                >
+                  Shared
+                </TabsTrigger>
               </TabsList>
             </Tabs>
 
@@ -148,16 +204,19 @@ export default function DashboardPage() {
                         </div>
                         <MousePointer2 className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0" />
                       </div>
-                      <CardTitle className="text-xl font-semibold">{note.title || "Untitled"}</CardTitle>
+                      <CardTitle className="text-xl font-semibold">
+                        {note.title || "Untitled"}
+                      </CardTitle>
                       <CardDescription className="flex items-center gap-1.5 font-medium">
                         <Clock className="h-3 w-3" />
                         {new Date(note.updatedAt).toLocaleDateString()}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                       <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
-                        {note.previewText || "Ready for your collaborative input. Click to open the editor."}
-                       </p>
+                      <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
+                        {note.previewText ||
+                          "Ready for your collaborative input. Click to open the editor."}
+                      </p>
                     </CardContent>
                   </Card>
                 </Link>
@@ -165,8 +224,12 @@ export default function DashboardPage() {
             ) : (
               <div className="col-span-full py-24 text-center border-2 border-dashed rounded-3xl bg-muted/10">
                 <Zap className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-                <h3 className="text-xl font-bold italic">Silence in the Hub...</h3>
-                <p className="text-muted-foreground">Create your first document to spark collaboration.</p>
+                <h3 className="text-xl font-bold italic">
+                  Silence in the Hub...
+                </h3>
+                <p className="text-muted-foreground">
+                  Create your first document to spark collaboration.
+                </p>
               </div>
             )}
           </div>
@@ -181,11 +244,20 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-               <div className="p-4 bg-background rounded-2xl border border-primary/10 text-xs shadow-sm">
-                 <p className="font-semibold text-primary mb-1">Weekly Insight</p>
-                 Your most active document is <span className="underline italic">"Project Alpha"</span>. You've spent 4 hours collaborating there.
-               </div>
-               <Button variant="secondary" className="w-full rounded-xl text-xs font-bold">View AI Analytics</Button>
+              <div className="p-4 bg-background rounded-2xl border border-primary/10 text-xs shadow-sm">
+                <p className="font-semibold text-primary mb-1">
+                  Weekly Insight
+                </p>
+                Your most active document is{" "}
+                <span className="underline italic">"Project Alpha"</span>.
+                You've spent 4 hours collaborating there.
+              </div>
+              <Button
+                variant="secondary"
+                className="w-full rounded-xl text-xs font-bold"
+              >
+                View AI Analytics
+              </Button>
             </CardContent>
           </Card>
 
@@ -197,22 +269,37 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
-               {[
-                 { name: "Sumanth", action: "edited", doc: "Frontend Setup", color: "bg-orange-500" },
-                 { name: "Rahul", action: "commented", doc: "API Docs", color: "bg-green-500" }
-               ].map((user, i) => (
-                 <div key={i} className="flex gap-3 items-center">
-                   <div className={`h-8 w-8 rounded-full ${user.color} flex items-center justify-center text-[10px] text-white font-bold ring-2 ring-background`}>
-                     {user.name[0]}
-                   </div>
-                   <div className="flex-1">
-                     <p className="text-xs">
-                       <span className="font-bold">{user.name}</span> {user.action}
-                     </p>
-                     <p className="text-[10px] text-muted-foreground line-clamp-1">{user.doc}</p>
-                   </div>
-                 </div>
-               ))}
+              {[
+                {
+                  name: "Sumanth",
+                  action: "edited",
+                  doc: "Frontend Setup",
+                  color: "bg-orange-500",
+                },
+                {
+                  name: "Rahul",
+                  action: "commented",
+                  doc: "API Docs",
+                  color: "bg-green-500",
+                },
+              ].map((user, i) => (
+                <div key={i} className="flex gap-3 items-center">
+                  <div
+                    className={`h-8 w-8 rounded-full ${user.color} flex items-center justify-center text-[10px] text-white font-bold ring-2 ring-background`}
+                  >
+                    {user.name[0]}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs">
+                      <span className="font-bold">{user.name}</span>{" "}
+                      {user.action}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground line-clamp-1">
+                      {user.doc}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>

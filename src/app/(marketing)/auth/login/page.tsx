@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,10 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { login } from "@/services/auth/service";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+import { getUser } from "@/services/user/service";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,40 +27,45 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-
-    const formData = new FormData(e.currentTarget);
-
-    const payload = {
-      email: formData.get("email"),
-      password: formData.get("password"),
-    };
-
     try {
-      const res = await fetch("http://localhost:3002/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const formData = new FormData(e.currentTarget);
 
-      const data = await res.json();
+      const email = formData.get("email");
+      const password = formData.get("password");
 
-      if (!res.ok) {
-        throw new Error(data.message || "Login failed");
+      if (typeof email !== "string" || typeof password !== "string") {
+        throw new Error("Invalid Form Input");
       }
 
-      // Store JWT
-      localStorage.setItem("token", data.accessToken);
+      const data = await login({ email, password });
 
-      alert("Login successful!");
-      router.push("/dashboard"); // change if needed
+      localStorage.setItem("token", data?.accessToken);
+
+      toast.success("Login Sucessfull");
+
+      router.push("/dashboard");
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await getUser();
+        if (res) {
+          toast.info("User already logged in");
+          router.push("/dashboard");
+        }
+      } catch (error: any) {
+        toast.error(error.message);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   return (
     <div className="flex h-[calc(100vh-4rem)] items-center justify-center p-4">
@@ -83,16 +92,18 @@ export default function LoginPage() {
 
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-              />
+              <Input id="password" name="password" type="password" required />
             </div>
 
             <Button className="w-full" type="submit" disabled={loading}>
-              {loading ? "Logging in..." : "Login"}
+              {loading ? (
+                <>
+                  <Loader2 className="h-5 w-5" />
+                  Loading...
+                </>
+              ) : (
+                "Login"
+              )}
             </Button>
           </CardContent>
         </form>

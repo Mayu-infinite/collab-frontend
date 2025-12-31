@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,9 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { signup } from "@/services/auth/service";
+import { toast } from "sonner";
+import { getUser } from "@/services/user/service";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -23,38 +26,53 @@ export default function SignUpPage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-
-    const formData = new FormData(e.currentTarget);
-
-    const payload = {
-      name: formData.get("name"),
-      email: formData.get("email"),
-      password: formData.get("password"),
-    };
-
     try {
-      const res = await fetch("http://localhost:3002/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const formData = new FormData(e.currentTarget);
 
-      const data = await res.json();
+      const name = formData.get("name");
+      const email = formData.get("email");
+      const password = formData.get("password");
 
-      if (!res.ok) {
-        throw new Error(data.message || "Signup failed");
+      if (
+        typeof email !== "string" ||
+        typeof password !== "string" ||
+        typeof name !== "string"
+      ) {
+        throw new Error("Invalid Form input");
       }
 
-      alert("Signup successful!");
+      const res = await signup({ name, email, password });
+
+      if (!res) {
+        throw new Error("Error Creating User.");
+      }
+
+      toast.success("Success fully Registered");
+
       router.push("/auth/login");
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await getUser();
+        if (res) {
+          toast.info("User already logged in");
+          router.push("/dashboard");
+        }
+      } catch (error: any) {
+        toast.error(error.message);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   return (
     <div className="flex h-[calc(100vh-4rem)] items-center justify-center p-4">
@@ -88,12 +106,7 @@ export default function SignUpPage() {
 
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-              />
+              <Input id="password" name="password" type="password" required />
             </div>
 
             <Button className="w-full" type="submit" disabled={loading}>
