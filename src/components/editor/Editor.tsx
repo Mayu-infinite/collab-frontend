@@ -3,14 +3,22 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
-import Image from "@tiptap/extension-image";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
-import { useCallback, useEffect, useState } from "react";
-import { debounce } from "lodash";
+import Image from "@tiptap/extension-image";
+import Link from "@tiptap/extension-link";
+import Underline from "@tiptap/extension-underline";
+import { Table } from "@tiptap/extension-table";
+import TableRow from "@tiptap/extension-table-row";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
+import TextAlign from "@tiptap/extension-text-align";
+import Highlight from "@tiptap/extension-highlight";
+import { useCallback, useState } from "react";
 import { api } from "@/lib/axios";
 import { Toolbar } from "./Toolbar";
 import { toast } from "sonner";
+import { debounce } from "lodash";
 
 interface EditorProps {
   documentId: string;
@@ -19,21 +27,24 @@ interface EditorProps {
 }
 
 export function Editor({ documentId, initialContent, title }: EditorProps) {
-  // 🔥 THIS STATE EXISTS ONLY TO FORCE RE-RENDER
   const [, forceUpdate] = useState(0);
 
-  // Optional feature states
   const [isAIActive, setIsAIActive] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"Saved" | "Saving..." | "Error">(
+    "Saved",
+  );
 
-  // Autosave (debounced)
-  const saveContent = useCallback(
-    debounce(async (htmlContent: string) => {
+  const debouncedSave = useCallback(
+    debounce(async (html: string) => {
+      setSaveStatus("Saving...");
       try {
-        await api.put(`/documents/${documentId}`, { content: htmlContent });
-      } catch (err: any) {
-        console.error("Save failed", err);
-        toast.error(err.message);
+        await api.put(`/documents/${documentId}`, { content: html });
+        setSaveStatus("Saved");
+      } catch (err) {
+        console.error(err);
+        setSaveStatus("Error");
+        toast.error("Failed to save changes");
       }
     }, 1500),
     [documentId],
@@ -41,91 +52,116 @@ export function Editor({ documentId, initialContent, title }: EditorProps) {
 
   const editor = useEditor({
     immediatelyRender: false,
-
+    shouldRerenderOnTransaction: false,
     extensions: [
       StarterKit.configure({
-        heading: { levels: [1, 2] },
-        bulletList: { keepMarks: true },
-        orderedList: { keepMarks: true },
+        heading: { levels: [1, 2, 3] },
+        bulletList: {
+          keepMarks: true,
+          keepAttributes: false,
+        },
+        orderedList: {
+          keepMarks: true,
+          keepAttributes: false,
+        },
       }),
       Placeholder.configure({
-        placeholder: "Write something brilliant or press '/' for commands...",
+        placeholder: "Type '/' for commands...",
       }),
-      Image,
       TaskList,
       TaskItem.configure({ nested: true }),
+      Underline,
+      Highlight.configure({ multicolor: true }),
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+      }),
+      Image.configure({
+        allowBase64: true,
+        inline: true,
+      }),
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+      }),
+      // Table Configuration
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
-    content: initialContent || "",
+    content: initialContent,
     editorProps: {
       attributes: {
-        spellcheck: "false",
         class: [
-          "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl",
-          "mx-auto focus:outline-none",
-          "min-h-[80vh] p-16 bg-background",
-          "shadow-2xl border-x border-b rounded-b-xl transition-all",
+          // Base Typography
+          "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none mx-auto",
+          "min-h-[80vh] p-10 bg-background rounded-b-xl shadow-sm border",
 
-          // 🔥 REQUIRED FOR HEADINGS
-          "[&_h1]:text-4xl [&_h1]:font-extrabold [&_h1]:mt-6 [&_h1]:mb-4",
-          "[&_h2]:text-3xl [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-4",
+          // Color & Theme Overrides
+          "prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground",
+          "prose-li:marker:text-muted-foreground",
+          "prose-img:rounded-lg prose-img:border prose-img:shadow-sm",
 
-          // Lists
-          "[&_ul]:list-disc [&_ul]:pl-6",
-          "[&_ol]:list-decimal [&_ol]:pl-6",
+          // 2. EXPLICIT HEADING STYLES
+          "[&_h1]:text-4xl [&_h1]:font-extrabold [&_h1]:mb-4",
+          "[&_h2]:text-3xl [&_h2]:font-bold [&_h2]:mb-4",
+          "[&_h3]:text-2xl [&_h3]:font-semibold [&_h3]:mb-4",
+
+          // 4. FIX LIST STYLES (Bulleted & Numbered)
+          "[&_ul:not([data-type=taskList])]:list-disc [&_ul:not([data-type=taskList])]:pl-5 [&_ul:not([data-type=taskList])]:mb-4",
+          "[&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-4",
+          "[&_li]:my-1",
+
+          // 5. FIX TABLE STYLES
+          // Force tables to have borders, collapse, and width
+          "[&_table]:w-full [&_table]:border-collapse [&_table]:border [&_table]:border-border [&_table]:my-4",
+          // Style Header Cells (th)
+          "[&_th]:border [&_th]:border-border [&_th]:p-2 [&_th]:bg-muted [&_th]:font-bold [&_th]:text-left",
+          // Style Standard Cells (td) - Add min-width to prevent squishing
+          "[&_td]:border [&_td]:border-border [&_td]:p-2 [&_td]:min-w-[100px] [&_td]:relative",
+          // Fix selection highlight for Tiptap Cell Selection
+          "[&_.selectedCell]:bg-primary/10",
         ].join(" "),
       },
     },
-
-    // 🔥 FORCE RE-RENDER WHEN SELECTION CHANGES
     onSelectionUpdate: () => {
       forceUpdate((n) => n + 1);
     },
-
-    // 🔥 FORCE RE-RENDER ON EVERY TRANSACTION
     onTransaction: () => {
       forceUpdate((n) => n + 1);
     },
-
-    // Autosave on content change
     onUpdate: ({ editor }) => {
-      saveContent(editor.getHTML());
+      forceUpdate((n) => n + 1);
+      debouncedSave(editor.getHTML());
     },
   });
-
-  // Cleanup debounce on unmount
-  useEffect(() => {
-    return () => {
-      saveContent.cancel();
-    };
-  }, [saveContent]);
 
   if (!editor) return null;
 
   return (
-    <div className="max-w-5xl mx-auto pb-20">
-      {/* Title */}
-      <div className="mb-8 pl-1">
-        <h1 className="text-4xl font-extrabold tracking-tight text-foreground/90">
+    <div className="max-w-5xl mx-auto pb-20 pt-10">
+      <div className="mb-6 pl-1">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
           {title || "Untitled Document"}
         </h1>
       </div>
-
-      {/* Editor Container */}
-      <div className="relative shadow-2xl rounded-xl border">
+      <div className="relative rounded-xl border bg-background shadow-md overflow-hidden">
         <Toolbar
           editor={editor}
           isAIActive={isAIActive}
-          onToggleAI={() => setIsAIActive((v) => !v)}
+          onToggleAI={() => setIsAIActive(!isAIActive)}
           isVoiceActive={isVoiceActive}
-          onToggleVoice={() => setIsVoiceActive((v) => !v)}
+          onToggleVoice={() => setIsVoiceActive(!isVoiceActive)}
         />
         <EditorContent editor={editor} />
       </div>
-
-      {/* Footer */}
-      <div className="mt-4 flex items-center justify-between text-muted-foreground text-[10px] uppercase font-bold tracking-widest px-2">
-        <span>CollabHub v1.0</span>
-        <span>Auto-saving enabled</span>
+      <div className="mt-4 flex items-center justify-between px-2 text-xs text-muted-foreground font-medium uppercase tracking-wider">
+        <span>CollabHub v2.0</span>
+        <span className={saveStatus === "Error" ? "text-red-500" : ""}>
+          {saveStatus}
+        </span>
       </div>
     </div>
   );

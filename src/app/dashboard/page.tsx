@@ -25,6 +25,9 @@ import {
   History,
   MousePointer2,
   Star,
+  Delete,
+  Trash2,
+  Trash,
 } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -202,7 +205,9 @@ export default function DashboardPage() {
                         <div className="p-2.5 bg-primary/5 text-primary rounded-xl group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
                           <FileText className="h-5 w-5" />
                         </div>
-                        <MousePointer2 className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0" />
+                        <Button variant={"outline"} className="opacity-0 group-hover:opacity-100">
+                          <Trash className="h-5 w-5"/>
+                        </Button>
                       </div>
                       <CardTitle className="text-xl font-semibold">
                         {note.title || "Untitled"}
