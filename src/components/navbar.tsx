@@ -27,18 +27,24 @@ export function Navbar() {
         <nav className="ml-auto flex items-center gap-4">
           {isDashboard ? (
             // LOGOUT BUTTON - Appears only on dashboard
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="gap-2 text-muted-foreground hover:text-primary transition-colors"
-              onClick={() => {
-                // Add your logout logic here
-                window.location.href = "/";
-              }}
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
+            <Button
+  variant="ghost"
+  size="sm"
+  className="gap-2 text-muted-foreground hover:text-primary transition-colors"
+  onClick={() => {
+    localStorage.removeItem("token");
+
+    localStorage.removeItem("user");
+
+    sessionStorage.clear();
+
+    window.location.href =
+      "/auth/login";
+  }}
+>
+  <LogOut className="h-4 w-4" />
+  Logout
+</Button>
           ) : (
             // AUTH BUTTONS - Appear on marketing/auth pages
             <>
