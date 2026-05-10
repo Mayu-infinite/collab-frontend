@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { api } from "@/lib/axios";
 import { Editor } from "@/components/editor/Editor";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -19,12 +18,18 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { socket } from "@/lib/socket";
+import { getDocument } from "@/services/document/service";
 
 type DocumentData = {
   id: string;
   title: string;
   content: string;
   updatedAt?: string;
+
+  isCollaborative: boolean;
+
+  inviteCode?: string | null
 };
 
 type Collaborator = {
@@ -34,73 +39,6 @@ type Collaborator = {
   color: string;
   status: "online" | "idle" | "offline";
 };
-
-// --- MOCK DATA ---
-const MOCK_COLLABORATORS: Collaborator[] = [
-  {
-    id: "1",
-    name: "You",
-    initials: "ME",
-    color: "bg-blue-500",
-    status: "online",
-  },
-  {
-    id: "2",
-    name: "Alice Chen",
-    initials: "AC",
-    color: "bg-emerald-500",
-    status: "online",
-  },
-  {
-    id: "3",
-    name: "Marcus Johnson",
-    initials: "MJ",
-    color: "bg-amber-500",
-    status: "idle",
-  },
-  {
-    id: "4",
-    name: "Sarah Williams",
-    initials: "SW",
-    color: "bg-purple-500",
-    status: "offline",
-  },
-  {
-    id: "5",
-    name: "David Kim",
-    initials: "DK",
-    color: "bg-pink-500",
-    status: "offline",
-  },
-  {
-    id: "6",
-    name: "Elena Rodriguez",
-    initials: "ER",
-    color: "bg-red-500",
-    status: "offline",
-  },
-  {
-    id: "7",
-    name: "Tom Baker",
-    initials: "TB",
-    color: "bg-indigo-500",
-    status: "offline",
-  },
-  {
-    id: "8",
-    name: "Chris Pbacon",
-    initials: "CP",
-    color: "bg-orange-500",
-    status: "offline",
-  },
-  {
-    id: "9",
-    name: "Another User",
-    initials: "AU",
-    color: "bg-teal-500",
-    status: "offline",
-  },
-];
 
 function formatTimeAgo(dateString?: string) {
   if (!dateString) return "Never";
@@ -132,11 +70,14 @@ export default function DocumentPage() {
 
   // UI State for Sidebar
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
 
-  const activeUsers = MOCK_COLLABORATORS.filter(
+  const [isCollaborating, setIsCollaborating] = useState(false);
+
+  const activeUsers = collaborators.filter(
     (u) => u.status === "online" || u.status === "idle",
   );
-  const inactiveUsers = MOCK_COLLABORATORS.filter(
+  const inactiveUsers = collaborators.filter(
     (u) => u.status === "offline",
   );
 
@@ -144,18 +85,122 @@ export default function DocumentPage() {
     async function fetchDocument() {
       try {
         setLoading(true);
-        const res = await api.get(`/documents/${id}`);
-        setDoc(res.data);
+
+        const data =
+          await getDocument(id);
+
+        setDoc(data);
+
+        if (
+          data.isCollaborative
+        ) {
+          setIsCollaborating(
+            true,
+          );
+
+          setIsSidebarOpen(
+            true,
+          );
+        }
       } catch (err) {
         console.error(err);
-        setError("Failed to load document");
-        toast.error("Could not load document");
+
+        setError(
+          "Failed to load document",
+        );
+
+        toast.error(
+          "Could not load document",
+        );
       } finally {
         setLoading(false);
       }
     }
-    if (id) fetchDocument();
+
+    if (id) {
+      fetchDocument();
+    }
   }, [id]);
+
+  useEffect(() => {
+    if (
+      !id ||
+      !isCollaborating
+    ) {
+      return;
+    }
+
+    socket.connect();
+
+    socket.emit(
+      "join-document",
+      id,
+    );
+
+    socket.on(
+      "users-list",
+      (users) => {
+        const formatted =
+          users.map(
+            (
+              user: any,
+              index: number,
+            ) => {
+              const colors = [
+                "bg-blue-500",
+                "bg-emerald-500",
+                "bg-purple-500",
+                "bg-pink-500",
+                "bg-orange-500",
+                "bg-indigo-500",
+              ];
+
+              return {
+                id: user.userId,
+
+                name: user.name,
+
+                initials:
+                  user.name
+                    .split(" ")
+                    .map(
+                      (
+                        p: string,
+                      ) => p[0],
+                    )
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase(),
+
+                color:
+                  colors[
+                  index %
+                  colors.length
+                  ],
+
+                status:
+                  "online",
+              };
+            },
+          );
+
+        setCollaborators(
+          formatted,
+        );
+      },
+    );
+
+    return () => {
+      socket.off(
+        "users-list",
+      );
+
+      socket.disconnect();
+    };
+  }, [
+    id,
+    isCollaborating,
+  ]);
 
   // --- HELPER COMPONENT FOR USER ROWS ---
   const UserRow = ({ user }: { user: Collaborator }) => (
@@ -268,12 +313,18 @@ export default function DocumentPage() {
             className="h-8 w-8"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             title="Toggle Collaborators"
+            disabled={!isCollaborating}
           >
             <Users className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" className="h-8">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8"
+            onClick={() => setIsCollaborating(true)}
+          >
             <Share2 className="mr-2 h-3.5 w-3.5" />
-            Share
+            Collaborate
           </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <MoreHorizontal className="h-4 w-4" />

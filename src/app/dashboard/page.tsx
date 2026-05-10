@@ -206,7 +206,7 @@ export default function DashboardPage() {
                           <FileText className="h-5 w-5" />
                         </div>
                         <Button variant={"outline"} className="opacity-0 group-hover:opacity-100">
-                          <Trash className="h-5 w-5"/>
+                          <Trash className="h-5 w-5" />
                         </Button>
                       </div>
                       <CardTitle className="text-xl font-semibold">

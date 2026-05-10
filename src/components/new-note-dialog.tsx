@@ -42,7 +42,7 @@ function NewNoteDialog({ buttonStyles }: { buttonStyles: string }) {
       toast.success("Document successfully created!");
       setOpen(false);
 
-      router.push(`/dashboard/documents/${res.data.id}`);
+      router.push(`/dashboard/documents/${res.id}`);
     } catch (err: any) {
       toast.error(err.message);
       console.error("Error creating document" + err);
