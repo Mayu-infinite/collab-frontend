@@ -100,13 +100,20 @@ export default function SignUpPage() {
                 name="email"
                 type="email"
                 placeholder="m@example.com"
+                autoComplete="off"
                 required
               />
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required />
+              <Input 
+                id="password" 
+                name="password" 
+                type="password" 
+                autoComplete="new-password"
+                required 
+              />
             </div>
 
             <Button className="w-full" type="submit" disabled={loading}>

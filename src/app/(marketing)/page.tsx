@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -26,9 +27,12 @@ export default function WelcomePage() {
             enough for enterprises.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
-            <Button size="lg" className="h-12 px-8 text-base">
-              Start Building Free <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            <Link href="/auth/login">
+  <Button size="lg" className="h-12 px-8 text-base">
+    Start Building Free
+    <ArrowRight className="ml-2 h-4 w-4" />
+  </Button>
+</Link>
           </div>
         </section>
 

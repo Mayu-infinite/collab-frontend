@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { joinCollaboration } from "@/services/document/service";
 import { api } from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,9 +48,29 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-
+  const [inviteCode, setInviteCode] = useState("");
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
+
+  const handleJoinCollaboration = async () => {
+  if (!inviteCode.trim()) {
+    toast.error("Enter invite code");
+    return;
+  }
+
+  try {
+    await joinCollaboration(inviteCode);
+
+    toast.success("Joined collaboration!");
+
+    const res = await api.get("/documents");
+    setNotes(Array.isArray(res.data) ? res.data : []);
+
+    setInviteCode("");
+  } catch (error: any) {
+    toast.error(error.message);
+  }
+};
 
   useEffect(() => {
     async function fetchNotes() {
@@ -172,15 +193,29 @@ export default function DashboardPage() {
               </TabsList>
             </Tabs>
 
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Find a document..."
-                className="pl-10 bg-background border-none shadow-sm focus-visible:ring-1 focus-visible:ring-primary/50"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+  <div className="relative w-full sm:w-64">
+    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+
+    <Input
+      placeholder="Find a document..."
+      className="pl-10 bg-background border-none shadow-sm focus-visible:ring-1 focus-visible:ring-primary/50"
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+    />
+  </div>
+
+  <Input
+    placeholder="Paste invite code"
+    value={inviteCode}
+    onChange={(e) => setInviteCode(e.target.value)}
+    className="w-full sm:w-64"
+  />
+
+  <Button onClick={handleJoinCollaboration}>
+    Join
+  </Button>
+</div>
           </div>
 
           {error && (

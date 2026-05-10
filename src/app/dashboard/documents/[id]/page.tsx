@@ -178,17 +178,40 @@ export default function DocumentPage() {
 
         setDoc(data);
 
-        if (
-          data.isCollaborative
-        ) {
-          setIsCollaborating(
-            true,
-          );
+        if (data.isCollaborative) {
+  socket.auth = {
+    token: localStorage.getItem("token"),
+  };
 
-          setIsSidebarOpen(
-            true,
-          );
-        }
+  if (!socket.connected) {
+    socket.connect();
+  }
+
+  socket.on("connect", () => {
+    console.log(
+      "SOCKET CONNECTED:",
+      socket.id,
+    );
+
+    socket.emit(
+      "join-document",
+      id,
+    );
+  });
+
+  socket.on(
+    "disconnect",
+    () => {
+      console.log(
+        "SOCKET DISCONNECTED",
+      );
+    },
+  );
+
+  setIsCollaborating(true);
+
+  setIsSidebarOpen(true);
+}
       } catch (err) {
         console.error(err);
 
@@ -209,85 +232,46 @@ export default function DocumentPage() {
     }
   }, [id]);
 
-  useEffect(() => {
-    if (
-      !id ||
-      !isCollaborating
-    ) {
-      return;
-    }
+  
 
-    socket.connect();
+useEffect(() => {
+  socket.on("users-list", (users) => {
+    const colors = [
+      "bg-blue-500",
+      "bg-emerald-500",
+      "bg-purple-500",
+      "bg-pink-500",
+      "bg-orange-500",
+      "bg-indigo-500",
+    ];
 
-    socket.emit(
-      "join-document",
-      id,
+    const formattedUsers = users.map(
+      (user: any, index: number) => ({
+        id: user.userId,
+
+        name: user.name,
+
+        initials: user.name
+          .split(" ")
+          .map((part: string) => part[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase(),
+
+        color:
+          colors[index % colors.length],
+
+        status: "online",
+      }),
     );
 
-    socket.on(
-      "users-list",
-      (users) => {
-        const formatted =
-          users.map(
-            (
-              user: any,
-              index: number,
-            ) => {
-              const colors = [
-                "bg-blue-500",
-                "bg-emerald-500",
-                "bg-purple-500",
-                "bg-pink-500",
-                "bg-orange-500",
-                "bg-indigo-500",
-              ];
+    setCollaborators(formattedUsers);
+  });
 
-              return {
-                id: user.userId,
-
-                name: user.name,
-
-                initials:
-                  user.name
-                    .split(" ")
-                    .map(
-                      (
-                        p: string,
-                      ) => p[0],
-                    )
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase(),
-
-                color:
-                  colors[
-                    index %
-                      colors.length
-                  ],
-
-                status:
-                  "online",
-              };
-            },
-          );
-
-        setCollaborators(
-          formatted,
-        );
-      },
-    );
-
-    return () => {
-      socket.off(
-        "users-list",
-      );
-
-      socket.disconnect();
-    };
-  }, [
-    id,
-    isCollaborating,
-  ]);
+  return () => {
+    socket.off("users-list");
+  };
+}, []);
 
   const UserRow = ({
     user,
