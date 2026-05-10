@@ -1,109 +1,34 @@
 "use client";
 
-import { useState } from "react";
-
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
- DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
+import { Copy, Check } from "lucide-react";
+import { useState } from "react";
 
-import { Share2, Copy, Check } from "lucide-react";
+interface CollaborationDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  inviteCode: string;
+}
 
-import { toast } from "sonner";
-
-type Props = {
-  documentId: string;
-
-  inviteCode?: string | null;
-
-  isCollaborative?: boolean;
-
-  onEnabled?: (inviteCode: string) => void;
-};
-
-export function CollaborationDialog({
-  documentId,
+export default function CollaborationDialog({
+  open,
+  onOpenChange,
   inviteCode,
-  isCollaborative,
-  onEnabled,
-}: Props) {
-  const [open, setOpen] = useState(false);
-
-  const [loading, setLoading] = useState(false);
-
+}: CollaborationDialogProps) {
   const [copied, setCopied] = useState(false);
 
-  const [generatedCode, setGeneratedCode] = useState(
-    inviteCode || "",
-  );
-
-  const [enabled, setEnabled] = useState(
-    Boolean(isCollaborative),
-  );
-
-  const handleEnableCollaboration = async () => {
-    try {
-      setLoading(true);
-
-      const token = localStorage.getItem("token");
-
-      const res = await fetch(
-        `http://localhost:3002/documents/${documentId}/collaborate`,
-        {
-          method: "PATCH",
-
-          headers: {
-            "Content-Type": "application/json",
-
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      if (!res.ok) {
-        throw new Error(
-          "Failed to enable collaboration",
-        );
-      }
-
-      const data = await res.json();
-
-      setGeneratedCode(data.inviteCode);
-
-      setEnabled(true);
-
-      onEnabled?.(data.inviteCode);
-
-      toast.success(
-        "Collaboration enabled!",
-      );
-    } catch (err) {
-      console.error(err);
-
-      toast.error(
-        "Could not enable collaboration",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleCopy = async () => {
-    if (!generatedCode) return;
-
-    await navigator.clipboard.writeText(
-      generatedCode,
-    );
+    await navigator.clipboard.writeText(inviteCode);
 
     setCopied(true);
-
-    toast.success("Invite code copied!");
 
     setTimeout(() => {
       setCopied(false);
@@ -111,79 +36,46 @@ export function CollaborationDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8"
-        >
-          <Share2 className="mr-2 h-3.5 w-3.5" />
-
-          {enabled
-            ? "Collaborating"
-            : "Collaborate"}
-        </Button>
-      </DialogTrigger>
-
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            Collaboration
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg border border-white/10 bg-[#0b1120]/95 backdrop-blur-xl text-white">
+        <DialogHeader className="space-y-3">
+          <DialogTitle className="text-2xl font-bold">
+            You are collaborating!
           </DialogTitle>
 
-          <DialogDescription>
-            Enable real-time collaboration
-            and invite others using an
-            invite code.
+          <DialogDescription className="text-gray-400 text-sm">
+            Share this invite code with others to join this document.
           </DialogDescription>
         </DialogHeader>
 
-        {!enabled ? (
-          <div className="space-y-4 pt-4">
-            <Button
-              className="w-full"
-              onClick={
-                handleEnableCollaboration
-              }
-              disabled={loading}
-            >
-              {loading
-                ? "Enabling..."
-                : "Enable Collaboration"}
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4 pt-4">
-            <div className="rounded-lg border bg-muted/30 p-4 text-center">
-              <p className="text-sm text-muted-foreground mb-2">
-                Invite Code
-              </p>
+        <div className="mt-6 space-y-4">
+          <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-6">
+            <p className="text-sm text-gray-400 mb-3 text-center">
+              Invite Code
+            </p>
 
-              <div className="text-2xl font-bold tracking-widest">
-                {generatedCode}
-              </div>
+            <div className="break-all text-center text-3xl font-bold tracking-wide text-cyan-300">
+              {inviteCode}
             </div>
-
-            <Button
-              variant="secondary"
-              className="w-full"
-              onClick={handleCopy}
-            >
-              {copied ? (
-                <>
-                  <Check className="mr-2 h-4 w-4" />
-                  Copied
-                </>
-              ) : (
-                <>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copy Invite Code
-                </>
-              )}
-            </Button>
           </div>
-        )}
+
+          <Button
+            onClick={handleCopy}
+            className="w-full h-12 text-base font-semibold"
+          >
+            {copied ? (
+              <>
+                <Check className="mr-2 h-5 w-5" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <Copy className="mr-2 h-5 w-5" />
+                Copy Invite Code
+              </>
+            )}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
