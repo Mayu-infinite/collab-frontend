@@ -81,6 +81,11 @@ export default function DocumentPage() {
     (u) => u.status === "offline",
   );
 
+
+  const handleEnableCollaboration = async () => {
+
+  }
+
   useEffect(() => {
     async function fetchDocument() {
       try {
