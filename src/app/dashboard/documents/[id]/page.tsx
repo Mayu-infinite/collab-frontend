@@ -28,7 +28,10 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { socket } from "@/lib/socket";
-import { getDocument } from "@/services/document/service";
+import {
+  getDocument,
+  enableCollaboration,
+} from "@/services/document/service";
 import { api } from "@/lib/axios";
 
 type DocumentData = {
@@ -79,6 +82,8 @@ function formatTimeAgo(dateString?: string) {
   });
 }
 
+
+
 export default function DocumentPage() {
   const { id } = useParams<{ id: string }>();
 
@@ -110,43 +115,39 @@ export default function DocumentPage() {
     (u) => u.status === "offline",
   );
 
-  const handleEnableCollaboration =
-    async () => {
-      try {
-        const res = await api.post(
-          `/documents/${id}/collaborate`,
-        );
+  const handleEnableCollaboration = async () => {
+  try {
+    const updatedDoc =
+      await enableCollaboration(id);
 
-        const updatedDoc = res.data;
+    setDoc((prev) =>
+      prev
+        ? {
+            ...prev,
+            isCollaborative: true,
+            inviteCode:
+              updatedDoc.inviteCode,
+          }
+        : prev,
+    );
 
-        setDoc((prev) =>
-          prev
-            ? {
-                ...prev,
-                isCollaborative: true,
-                inviteCode:
-                  updatedDoc.inviteCode,
-              }
-            : prev,
-        );
+    setIsCollaborating(true);
 
-        setIsCollaborating(true);
+    setIsSidebarOpen(true);
 
-        setIsSidebarOpen(true);
+    setDialogOpen(true);
 
-        setDialogOpen(true);
+    toast.success(
+      "Collaboration enabled!",
+    );
+  } catch (err) {
+    console.error(err);
 
-        toast.success(
-          "Collaboration enabled!",
-        );
-      } catch (err) {
-        console.error(err);
-
-        toast.error(
-          "Failed to enable collaboration",
-        );
-      }
-    };
+    toast.error(
+      "Failed to enable collaboration",
+    );
+  }
+};
 
   const handleCopyInviteCode =
     async () => {
