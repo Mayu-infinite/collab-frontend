@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Editor } from "@/components/editor/Editor";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { CollaborationDialog } from "@/components/editor/CollaborationDialog";
 import { Separator } from "@/components/ui/separator";
 import {
   AlertCircle,
@@ -212,7 +213,7 @@ export default function DocumentPage() {
     >
       <div
         className={cn(
-          "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm ring-2 ring-background relative flex-shrink-0",
+          "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm ring-2 ring-background relative shrink-0",
           user.color,
         )}
       >
@@ -241,7 +242,7 @@ export default function DocumentPage() {
 
   if (loading) {
     return (
-      <div className="h-[100dvh] bg-background flex flex-col">
+      <div className="h-dvh bg-background flex flex-col">
         <div className="flex-none flex items-center justify-between px-6 py-4 border-b">
           <Skeleton className="h-8 w-24" />
           <div className="flex gap-2">
@@ -258,7 +259,7 @@ export default function DocumentPage() {
 
   if (error || !doc) {
     return (
-      <div className="flex flex-col items-center justify-center h-[100dvh] space-y-4 text-center">
+      <div className="flex flex-col items-center justify-center h-dvh space-y-4 text-center">
         <div className="bg-destructive/10 p-4 rounded-full">
           <AlertCircle className="h-10 w-10 text-destructive" />
         </div>
@@ -279,7 +280,7 @@ export default function DocumentPage() {
     // 1. ROOT CONTAINER:
     // h-[100dvh] forces it to fill the viewport exactly.
     // overflow-hidden prevents the BODY from scrolling.
-    <div className="h-[100dvh] w-full flex flex-col bg-muted/5 overflow-hidden">
+    <div className="h-dvh w-full flex flex-col bg-muted/5 overflow-hidden">
       {/* 2. HEADER: 
          flex-none prevents it from shrinking or being pushed off screen */}
       <header className="flex-none flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur z-20">
@@ -296,7 +297,7 @@ export default function DocumentPage() {
           <Separator orientation="vertical" className="h-4 mx-2" />
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <FileText className="h-4 w-4" />
-            <span className="truncate max-w-[150px] sm:max-w-md text-foreground">
+            <span className="truncate max-w-37.5 sm:max-w-md text-foreground">
               {doc.title}
             </span>
           </div>
@@ -317,15 +318,26 @@ export default function DocumentPage() {
           >
             <Users className="h-4 w-4" />
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8"
-            onClick={() => setIsCollaborating(true)}
-          >
-            <Share2 className="mr-2 h-3.5 w-3.5" />
-            Collaborate
-          </Button>
+          <CollaborationDialog
+  documentId={doc.id}
+  inviteCode={doc.inviteCode}
+  isCollaborative={doc.isCollaborative}
+  onEnabled={(code) => {
+    setIsCollaborating(true);
+
+    setIsSidebarOpen(true);
+
+    setDoc((prev) =>
+      prev
+        ? {
+            ...prev,
+            isCollaborative: true,
+            inviteCode: code,
+          }
+        : prev,
+    );
+  }}
+/>
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <MoreHorizontal className="h-4 w-4" />
           </Button>
