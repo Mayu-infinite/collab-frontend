@@ -138,27 +138,43 @@
 /* Without this, checkboxes will look like bullet points or be invisible */
 ul[data-type="taskList"] {
   list-style: none;
-  padding: 0;
+  margin: 0.75rem 0;
+  padding-left: 0 !important;
 }
 
 li[data-type="taskItem"] {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 0.5rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: 0.5rem;
+  margin: 0.35rem 0;
 }
 
 li[data-type="taskItem"] label {
-  margin-right: 0.5rem;
+  margin: 0.12rem 0 0;
   user-select: none;
+  line-height: 1;
 }
 
 li[data-type="taskItem"] input[type="checkbox"] {
-  margin-top: 0.25rem;
-  margin-right: 0.5rem;
+  margin: 0;
   cursor: pointer;
   accent-color: var(--primary); /* Uses your theme's primary color */
   width: 1rem;
   height: 1rem;
+}
+
+li[data-type="taskItem"] > div {
+  min-width: 0;
+}
+
+li[data-type="taskItem"] > div > p {
+  margin: 0;
+}
+
+li[data-type="taskItem"][data-checked="true"] > div {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
 }
 
 /* 2. Placeholder Text */
@@ -177,3 +193,94 @@ li[data-type="taskItem"] input[type="checkbox"] {
   outline: none;
 }
 
+.ProseMirror {
+  caret-color: var(--foreground);
+}
+
+.ProseMirror img {
+  display: block;
+  max-width: min(100%, 720px);
+  height: auto;
+}
+
+.ProseMirror .collab-embed {
+  margin: 1rem 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--background);
+}
+
+.ProseMirror .collab-embed iframe {
+  display: block;
+  width: 100%;
+  min-height: 320px;
+  border: 0;
+}
+
+.ProseMirror .collab-embed-link {
+  padding: 0.875rem 1rem;
+}
+
+.ProseMirror .collab-embed-link a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ProseMirror .collab-embed-link a:hover {
+  text-decoration: underline;
+}
+
+.ProseMirror .tableWrapper {
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+.ProseMirror table {
+  width: auto !important;
+  max-width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.ProseMirror th,
+.ProseMirror td {
+  min-width: 8rem;
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.625rem;
+  vertical-align: top;
+  background-clip: padding-box;
+}
+
+.ProseMirror th {
+  background: color-mix(in oklab, var(--muted) 70%, transparent);
+  font-weight: 700;
+}
+
+.ProseMirror th > *,
+.ProseMirror td > * {
+  margin: 0;
+}
+
+.ProseMirror .selectedCell::after {
+  pointer-events: none;
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
+}
+
+.ProseMirror .column-resize-handle {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  right: -2px;
+  bottom: -2px;
+  width: 4px;
+  background-color: var(--primary);
+}
+
+.ProseMirror.resize-cursor {
+  cursor: col-resize;
+}

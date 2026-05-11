@@ -15,9 +15,10 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signup } from "@/services/auth/service";
+import { getGoogleAuthUrl, signup } from "@/services/auth/service";
 import { toast } from "sonner";
 import { getUser } from "@/services/user/service";
+import { Chrome } from "lucide-react";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -60,14 +61,18 @@ export default function SignUpPage() {
 
   useEffect(() => {
     const fetchUser = async () => {
+      if (!localStorage.getItem("token")) {
+        return;
+      }
+
       try {
         const res = await getUser();
         if (res) {
           toast.info("User already logged in");
           router.push("/dashboard");
         }
-      } catch (error: any) {
-        toast.error(error.message);
+      } catch {
+        localStorage.removeItem("token");
       }
     };
 
@@ -118,6 +123,22 @@ export default function SignUpPage() {
 
             <Button className="w-full" type="submit" disabled={loading}>
               {loading ? "Creating..." : "Create account"}
+            </Button>
+
+            <div className="relative py-1 text-center text-xs text-muted-foreground">
+              <span className="bg-card px-2">or</span>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full gap-2"
+              onClick={() => {
+                window.location.href = getGoogleAuthUrl();
+              }}
+            >
+              <Chrome className="h-4 w-4" />
+              Continue with Google
             </Button>
           </CardContent>
         </form>
