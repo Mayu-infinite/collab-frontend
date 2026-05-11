@@ -2,15 +2,38 @@ import { api } from "@/lib/axios";
 import axios from "axios";
 import { ApiErrorResponse } from "../intefaces/error/interface";
 
-type DocumentResponse = {
+export type DocumentRole = "OWNER" | "EDITOR" | "VIEWER";
+
+export type DocumentMember = {
+  id: string;
+  role: DocumentRole;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+};
+
+export type DocumentResponse = {
   id: string;
   title: string;
   content: string;
+  createdAt?: string;
   updatedAt?: string;
-
   isCollaborative: boolean;
-
-  inviteCode?: string | null
+  inviteCode?: string | null;
+  ownerId?: string;
+  owner?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  currentUserRole?: DocumentRole;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  previewText?: string;
+  memberCount?: number;
+  members?: DocumentMember[];
 };
 
 type CollaborationResponse = {
@@ -48,6 +71,23 @@ export const getDocument = async (documentId: string): Promise<DocumentResponse>
     if (axios.isAxiosError<ApiErrorResponse>(error)) {
       const message = error.response?.data?.message;
       throw new Error(message || "Failed to create Document");
+    }
+
+    throw new Error("Unexpected Error Occured");
+  }
+}
+
+export const deleteDocument = async (
+  documentId: string,
+): Promise<{ id: string; deleted: boolean }> => {
+  try {
+    const res = await api.delete(`/documents/${documentId}`)
+
+    return res.data;
+  } catch (error: any) {
+    if (axios.isAxiosError<ApiErrorResponse>(error)) {
+      const message = error.response?.data?.message;
+      throw new Error(message || "Failed to delete document")
     }
 
     throw new Error("Unexpected Error Occured");

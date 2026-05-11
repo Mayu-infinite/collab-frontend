@@ -5,6 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import { Editor } from "@/components/editor/Editor";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import {
   AlertCircle,
@@ -14,23 +22,21 @@ import {
   Clock,
   FileText,
   Users,
-  Circle,
+  Copy,
+  Check,
+  MessageCircle,
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { socket } from "@/lib/socket";
-import { getDocument } from "@/services/document/service";
+import {
+  getDocument,
+  enableCollaboration,
+  type DocumentResponse,
+} from "@/services/document/service";
 
-type DocumentData = {
-  id: string;
-  title: string;
-  content: string;
-  updatedAt?: string;
-
-  isCollaborative: boolean;
-
-  inviteCode?: string | null
-};
+type DocumentData = DocumentResponse;
 
 type Collaborator = {
   id: string;
@@ -38,6 +44,15 @@ type Collaborator = {
   initials: string;
   color: string;
   status: "online" | "idle" | "offline";
+};
+
+type ChatMessage = {
+  id: string;
+  documentId: string;
+  userId: string;
+  name: string;
+  message: string;
+  createdAt: string;
 };
 
 function formatTimeAgo(dateString?: string) {
@@ -74,17 +89,92 @@ export default function DocumentPage() {
 
   const [isCollaborating, setIsCollaborating] = useState(false);
 
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const [copied, setCopied] = useState(false);
+
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
+  const [chatMessage, setChatMessage] = useState("");
+
   const activeUsers = collaborators.filter(
     (u) => u.status === "online" || u.status === "idle",
   );
-  const inactiveUsers = collaborators.filter(
-    (u) => u.status === "offline",
-  );
 
+  const canShare = doc?.currentUserRole === "OWNER";
 
   const handleEnableCollaboration = async () => {
+    if (!canShare) {
+      toast.error("Only the owner can manage sharing");
+      return;
+    }
 
-  }
+    try {
+      const updatedDoc =
+        await enableCollaboration(id);
+
+      setDoc((prev) =>
+        prev
+          ? {
+            ...prev,
+            isCollaborative: true,
+            inviteCode:
+              updatedDoc.inviteCode,
+            canEdit: true,
+          }
+        : prev,
+    );
+
+      setIsCollaborating(true);
+
+      setIsSidebarOpen(true);
+
+      setDialogOpen(true);
+
+      toast.success(
+        "Collaboration enabled!",
+      );
+    } catch (err) {
+      console.error(err);
+
+      toast.error(
+        "Failed to enable collaboration",
+      );
+    }
+  };
+
+  const handleCopyInviteCode =
+    async () => {
+      if (!doc?.inviteCode) return;
+
+      await navigator.clipboard.writeText(
+        doc.inviteCode,
+      );
+
+      setCopied(true);
+
+      toast.success(
+        "Invite code copied!",
+      );
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    };
+
+  const handleSendChatMessage = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const message = chatMessage.trim();
+
+    if (!message || !socket.connected) return;
+
+    socket.emit("chat-message", {
+      documentId: id,
+      message,
+    });
+    setChatMessage("");
+  };
 
   useEffect(() => {
     async function fetchDocument() {
@@ -95,17 +185,10 @@ export default function DocumentPage() {
           await getDocument(id);
 
         setDoc(data);
+        setIsCollaborating(data.isCollaborative);
 
-        if (
-          data.isCollaborative
-        ) {
-          setIsCollaborating(
-            true,
-          );
-
-          setIsSidebarOpen(
-            true,
-          );
+        if (data.isCollaborative) {
+          setIsSidebarOpen(true);
         }
       } catch (err) {
         console.error(err);
@@ -128,87 +211,114 @@ export default function DocumentPage() {
   }, [id]);
 
   useEffect(() => {
-    if (
-      !id ||
-      !isCollaborating
-    ) {
+    if (!doc?.isCollaborative) {
+      setCollaborators([]);
       return;
     }
 
-    socket.connect();
+    const token = localStorage.getItem("token");
 
-    socket.emit(
-      "join-document",
-      id,
-    );
+    if (!token) {
+      toast.error("Please log in again to collaborate");
+      return;
+    }
 
-    socket.on(
-      "users-list",
-      (users) => {
-        const formatted =
-          users.map(
-            (
-              user: any,
-              index: number,
-            ) => {
-              const colors = [
-                "bg-blue-500",
-                "bg-emerald-500",
-                "bg-purple-500",
-                "bg-pink-500",
-                "bg-orange-500",
-                "bg-indigo-500",
-              ];
+    const joinDocument = () => {
+      socket.emit("join-document", id);
+    };
 
-              return {
-                id: user.userId,
+    const handleUsersList = (
+      users: Array<{ userId: string; name?: string }>,
+    ) => {
+      const colors = [
+        "bg-blue-500",
+        "bg-emerald-500",
+        "bg-purple-500",
+        "bg-pink-500",
+        "bg-orange-500",
+        "bg-indigo-500",
+      ];
 
-                name: user.name,
+      const formattedUsers = users.map(
+        (user, index) => {
+          const name = user.name || "Collaborator";
 
-                initials:
-                  user.name
-                    .split(" ")
-                    .map(
-                      (
-                        p: string,
-                      ) => p[0],
-                    )
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase(),
-
-                color:
-                  colors[
-                  index %
-                  colors.length
-                  ],
-
-                status:
-                  "online",
-              };
-            },
-          );
-
-        setCollaborators(
-          formatted,
-        );
-      },
-    );
-
-    return () => {
-      socket.off(
-        "users-list",
+          return {
+            id: user.userId,
+            name,
+            initials: name
+              .split(" ")
+              .map((part) => part[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase(),
+            color: colors[index % colors.length],
+            status: "online" as const,
+          };
+        },
       );
 
-      socket.disconnect();
+      setCollaborators(formattedUsers);
     };
-  }, [
-    id,
-    isCollaborating,
-  ]);
 
-  // --- HELPER COMPONENT FOR USER ROWS ---
-  const UserRow = ({ user }: { user: Collaborator }) => (
+    const handleChatMessage = (message: ChatMessage) => {
+      if (message.documentId !== id) return;
+
+      setChatMessages((current) => [...current.slice(-49), message]);
+    };
+
+    const handleConnect = () => {
+      console.log("SOCKET CONNECTED:", socket.id);
+      joinDocument();
+    };
+
+    const handleDisconnect = () => {
+      console.log("SOCKET DISCONNECTED");
+      setCollaborators([]);
+    };
+
+    const handleConnectError = (error: Error) => {
+      console.error("SOCKET CONNECT ERROR:", error.message);
+      toast.error("Could not connect to collaboration");
+    };
+
+    const handleDocumentForbidden = () => {
+      toast.error("You do not have access to this document");
+      router.push("/dashboard");
+    };
+
+    socket.auth = { token };
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+    socket.on("connect_error", handleConnectError);
+    socket.on("document-forbidden", handleDocumentForbidden);
+    socket.on("users-list", handleUsersList);
+    socket.on("chat-message", handleChatMessage);
+
+    if (socket.connected) {
+      joinDocument();
+    } else {
+      socket.connect();
+    }
+
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.off("connect_error", handleConnectError);
+      socket.off("document-forbidden", handleDocumentForbidden);
+      socket.off("users-list", handleUsersList);
+      socket.off("chat-message", handleChatMessage);
+      socket.disconnect();
+      setCollaborators([]);
+      setChatMessages([]);
+    };
+  }, [doc?.isCollaborative, id]);
+
+  const UserRow = ({
+    user,
+  }: {
+    user: Collaborator;
+  }) => (
     <div
       className={cn(
         "flex items-center gap-3 group px-1",
@@ -217,7 +327,7 @@ export default function DocumentPage() {
     >
       <div
         className={cn(
-          "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm ring-2 ring-background relative flex-shrink-0",
+          "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm ring-2 ring-background relative shrink-0",
           user.color,
         )}
       >
@@ -246,7 +356,7 @@ export default function DocumentPage() {
 
   if (loading) {
     return (
-      <div className="h-[100dvh] bg-background flex flex-col">
+      <div className="h-dvh bg-background flex flex-col">
         <div className="flex-none flex items-center justify-between px-6 py-4 border-b">
           <Skeleton className="h-8 w-24" />
           <div className="flex gap-2">
@@ -263,7 +373,7 @@ export default function DocumentPage() {
 
   if (error || !doc) {
     return (
-      <div className="flex flex-col items-center justify-center h-[100dvh] space-y-4 text-center">
+      <div className="flex flex-col items-center justify-center h-dvh space-y-4 text-center">
         <div className="bg-destructive/10 p-4 rounded-full">
           <AlertCircle className="h-10 w-10 text-destructive" />
         </div>
@@ -284,7 +394,7 @@ export default function DocumentPage() {
     // 1. ROOT CONTAINER:
     // h-[100dvh] forces it to fill the viewport exactly.
     // overflow-hidden prevents the BODY from scrolling.
-    <div className="h-[100dvh] w-full flex flex-col bg-muted/5 overflow-hidden">
+    <div className="h-dvh w-full flex flex-col bg-muted/5 overflow-hidden">
       {/* 2. HEADER: 
          flex-none prevents it from shrinking or being pushed off screen */}
       <header className="flex-none flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur z-20">
@@ -301,7 +411,7 @@ export default function DocumentPage() {
           <Separator orientation="vertical" className="h-4 mx-2" />
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <FileText className="h-4 w-4" />
-            <span className="truncate max-w-[150px] sm:max-w-md text-foreground">
+            <span className="truncate max-w-37.5 sm:max-w-md text-foreground">
               {doc.title}
             </span>
           </div>
@@ -326,10 +436,18 @@ export default function DocumentPage() {
             variant="outline"
             size="sm"
             className="h-8"
-            onClick={() => setIsCollaborating(true)}
+            onClick={
+              handleEnableCollaboration
+            }
+            disabled={!canShare}
+            title={
+              canShare
+                ? "Share this document"
+                : "Only the owner can share this document"
+            }
           >
             <Share2 className="mr-2 h-3.5 w-3.5" />
-            Collaborate
+            {doc.isCollaborative ? "Invite" : "Collaborate"}
           </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <MoreHorizontal className="h-4 w-4" />
@@ -347,7 +465,10 @@ export default function DocumentPage() {
           <Editor
             documentId={doc.id}
             title={doc.title}
-            initialContent={doc.content}
+            initialContent={
+              doc.content
+            }
+            canEdit={doc.canEdit ?? false}
           />
         </main>
 
@@ -364,7 +485,12 @@ export default function DocumentPage() {
         >
           {/* Sidebar Header: Fixed height */}
           <div className="p-4 border-b flex-none">
-            <h3 className="font-semibold text-sm">Collaborators</h3>
+            <h3 className="font-semibold text-sm">
+              Collaborators
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Your role: {doc.currentUserRole ?? "VIEWER"}
+            </p>
           </div>
 
           {/* User List: Growable and scrollable 
@@ -385,38 +511,89 @@ export default function DocumentPage() {
               </div>
             </div>
 
-            {activeUsers.length > 0 && inactiveUsers.length > 0 && (
-              <Separator className="my-4" />
-            )}
-
-            {inactiveUsers.length > 0 && (
+            {doc.members && doc.members.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider flex items-center gap-2">
-                  <Circle className="h-2 w-2 fill-muted-foreground text-muted-foreground" />
-                  Away ({inactiveUsers.length})
+                <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                  Access
                 </h4>
+
                 <div className="space-y-3">
-                  {inactiveUsers.map((user) => (
-                    <UserRow key={user.id} user={user} />
+                  {doc.members.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between gap-3 px-1"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">
+                          {member.user.name}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {member.user.email}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-md border px-2 py-1 text-[10px] font-semibold">
+                        {member.role}
+                      </span>
+                    </div>
                   ))}
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Footer: Fixed at Bottom
-             pb-8: Safety padding for bottom screen edge */}
-          <div className="p-4 pb-8 border-t bg-muted/10 flex-none">
-            <div className="rounded-lg bg-background border shadow-sm p-3 text-xs text-muted-foreground text-center">
-              <p>Invite others to collaborate in real-time.</p>
-              <Button
-                variant="link"
-                size="sm"
-                className="h-auto p-0 text-primary mt-1 font-semibold"
-              >
-                Copy Invite Link
-              </Button>
-            </div>
+            {doc.isCollaborative && (
+              <div>
+                <h4 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  Chat
+                </h4>
+
+                <div className="mb-3 max-h-56 space-y-2 overflow-y-auto rounded-md border bg-muted/20 p-2">
+                  {chatMessages.length > 0 ? (
+                    chatMessages.map((message) => (
+                      <div key={message.id} className="rounded-md bg-background p-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate text-xs font-semibold">
+                            {message.name}
+                          </p>
+                          <span className="shrink-0 text-[10px] text-muted-foreground">
+                            {new Date(message.createdAt).toLocaleTimeString([], {
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        <p className="mt-1 wrap-break-words text-xs text-muted-foreground">
+                          {message.message}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="py-4 text-center text-xs text-muted-foreground">
+                      No messages yet.
+                    </p>
+                  )}
+                </div>
+
+                <form className="flex gap-2" onSubmit={handleSendChatMessage}>
+                  <Input
+                    value={chatMessage}
+                    onChange={(event) => setChatMessage(event.target.value)}
+                    placeholder="Message collaborators"
+                    className="h-8 text-xs"
+                    maxLength={1000}
+                  />
+                  <Button
+                    type="submit"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    disabled={!chatMessage.trim() || !socket.connected}
+                    title="Send message"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                  </Button>
+                </form>
+              </div>
+            )}
           </div>
         </aside>
       </div>

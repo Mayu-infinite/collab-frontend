@@ -5,6 +5,8 @@ import { LoginPayload, LoginResponse, SignUpPayload, SignUpResponse } from "../i
 
 const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
+export const getGoogleAuthUrl = () => `${BASE_API_URL}/auth/google`;
+
 export const login = async (payload: LoginPayload): Promise<LoginResponse> => {
   try {
     const { data } = await axios.post<LoginResponse>(
