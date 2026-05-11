@@ -1,40 +1,6 @@
 "use client";
 
-<<<<<<< Updated upstream
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { joinCollaboration } from "@/services/document/service";
-import { api } from "@/lib/axios";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Plus,
-  Search,
-  FileText,
-  Clock,
-  AlertCircle,
-  Sparkles,
-  Zap,
-  History,
-  MousePointer2,
-  Star,
-  Delete,
-  Trash2,
-  Trash,
-} from "lucide-react";
-=======
 import { useEffect, useMemo, useState } from "react";
-import type { MouseEvent } from "react";
->>>>>>> Stashed changes
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -43,6 +9,7 @@ import {
   FileText,
   Inbox,
   Lock,
+  Plus,
   Search,
   ShieldCheck,
   Trash2,
@@ -106,12 +73,6 @@ export default function DashboardPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-<<<<<<< Updated upstream
-
-  const router = useRouter();
-  const [isCreating, setIsCreating] = useState(false);
-
-=======
   const [inviteCode, setInviteCode] = useState("");
   const [activeTab, setActiveTab] = useState<DashboardTab>("all");
 
@@ -134,7 +95,6 @@ export default function DashboardPage() {
     }
   };
 
->>>>>>> Stashed changes
   useEffect(() => {
     fetchDashboard();
   }, []);
@@ -160,7 +120,7 @@ export default function DashboardPage() {
   };
 
   const handleDeleteDocument = async (
-    event: MouseEvent<HTMLButtonElement>,
+    event: React.MouseEvent<HTMLButtonElement>,
     note: DocumentResponse,
   ) => {
     event.preventDefault();
@@ -272,16 +232,6 @@ export default function DashboardPage() {
         </Card>
       </section>
 
-<<<<<<< Updated upstream
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Find a document..."
-                className="pl-10 bg-background border-none shadow-sm focus-visible:ring-1 focus-visible:ring-primary/50"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-=======
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <main className="space-y-4">
           <div className="flex flex-col gap-3 rounded-lg border bg-background p-3">
@@ -312,7 +262,6 @@ export default function DashboardPage() {
                 />
                 <Button onClick={handleJoinCollaboration}>Join</Button>
               </div>
->>>>>>> Stashed changes
             </div>
           </div>
 
