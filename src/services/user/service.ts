@@ -1,6 +1,6 @@
 import axios from "axios";
 import { api } from "@/lib/axios";
-import { ApiErrorResponse } from "../intefaces/error/interface";
+import { ApiErrorResponse } from "../interfaces/error/interface";
 
 type CurrentUser = {
   id: string;

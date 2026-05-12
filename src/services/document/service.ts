@@ -1,6 +1,6 @@
 import { api } from "@/lib/axios";
 import axios from "axios";
-import { ApiErrorResponse } from "../intefaces/error/interface";
+import { ApiErrorResponse } from "../interfaces/error/interface";
 
 export type DocumentRole = "OWNER" | "EDITOR" | "VIEWER";
 
