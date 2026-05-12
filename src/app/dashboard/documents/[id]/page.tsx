@@ -20,7 +20,7 @@ import {
   Share2,
   MoreHorizontal,
   Clock,
- FileText,
+  FileText,
   Users,
   Copy,
   Check,
@@ -126,6 +126,10 @@ export default function DocumentPage() {
       toast.error("Only the owner can manage sharing");
       return;
     }
+    if (isCollaborating) {
+      setDialogOpen(true)
+      return
+    }
 
     try {
       const updatedDoc =
@@ -140,8 +144,8 @@ export default function DocumentPage() {
               updatedDoc.inviteCode,
             canEdit: true,
           }
-        : prev,
-    );
+          : prev,
+      );
 
       setIsCollaborating(true);
 
@@ -341,8 +345,8 @@ export default function DocumentPage() {
       className={cn(
         "flex items-center gap-3 group px-1",
         user.status ===
-          "offline" &&
-          "opacity-60",
+        "offline" &&
+        "opacity-60",
       )}
     >
       <div
@@ -360,7 +364,7 @@ export default function DocumentPage() {
               "online"
               ? "bg-green-500"
               : user.status ===
-                  "idle"
+                "idle"
                 ? "bg-amber-500"
                 : "bg-gray-300",
           )}
@@ -526,55 +530,55 @@ export default function DocumentPage() {
       </header>
 
       <Dialog
-  open={dialogOpen}
-  onOpenChange={setDialogOpen}
->
-  <DialogContent className="sm:max-w-md border border-white/10 bg-[#0b1120]/95 backdrop-blur-xl text-white overflow-hidden">
-    
-    <DialogHeader className="space-y-3">
-      <DialogTitle className="text-2xl font-bold">
-        You are collaborating!
-      </DialogTitle>
-
-      <DialogDescription className="text-gray-400 text-sm">
-        Share this invite code with others to join this document.
-      </DialogDescription>
-    </DialogHeader>
-
-    <div className="mt-2 flex flex-col gap-4 w-full overflow-hidden">
-      
-      <div className="w-full rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-5 overflow-hidden">
-        
-        <p className="text-sm text-gray-400 text-center mb-3">
-          Invite Code
-        </p>
-
-        <div className="w-full text-center break-all">
-          <span className="text-2xl font-bold tracking-wide text-cyan-300">
-            {doc.inviteCode}
-          </span>
-        </div>
-      </div>
-
-      <Button
-        className="w-full h-11 text-sm font-semibold"
-        onClick={handleCopyInviteCode}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
       >
-        {copied ? (
-          <>
-            <Check className="mr-2 h-4 w-4" />
-            Copied!
-          </>
-        ) : (
-          <>
-            <Copy className="mr-2 h-4 w-4" />
-            Copy Invite Code
-          </>
-        )}
-      </Button>
-    </div>
-  </DialogContent>
-</Dialog>
+        <DialogContent className="sm:max-w-md border border-white/10 bg-[#0b1120]/95 backdrop-blur-xl text-white overflow-hidden">
+
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-2xl font-bold">
+              You are collaborating!
+            </DialogTitle>
+
+            <DialogDescription className="text-gray-400 text-sm">
+              Share this invite code with others to join this document.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-2 flex flex-col gap-4 w-full overflow-hidden">
+
+            <div className="w-full rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-5 overflow-hidden">
+
+              <p className="text-sm text-gray-400 text-center mb-3">
+                Invite Code
+              </p>
+
+              <div className="w-full text-center break-all">
+                <span className="text-2xl font-bold tracking-wide text-cyan-300">
+                  {doc.inviteCode}
+                </span>
+              </div>
+            </div>
+
+            <Button
+              className="w-full h-11 text-sm font-semibold"
+              onClick={handleCopyInviteCode}
+            >
+              {copied ? (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy Invite Code
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex flex-1 min-h-0 overflow-hidden relative no-scrollbar">
         <main className="flex-1 overflow-y-auto no-scrollbar">

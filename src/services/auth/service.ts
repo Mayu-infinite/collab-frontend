@@ -1,7 +1,6 @@
-import axios, { AxiosError } from "axios";
-import { ErrorBoundary } from "next/dist/client/components/error-boundary";
-import {ApiErrorResponse} from "../intefaces/error/interface"
-import { LoginPayload, LoginResponse, SignUpPayload, SignUpResponse } from "../intefaces/auth/interface";
+import axios from "axios";
+import { ApiErrorResponse } from "../interfaces/error/interface"
+import { LoginPayload, LoginResponse, SignUpPayload, SignUpResponse } from "../interfaces/auth/interface";
 
 const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
