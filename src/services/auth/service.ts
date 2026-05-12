@@ -3,7 +3,7 @@ import { ErrorBoundary } from "next/dist/client/components/error-boundary";
 import {ApiErrorResponse} from "../intefaces/error/interface"
 import { LoginPayload, LoginResponse, SignUpPayload, SignUpResponse } from "../intefaces/auth/interface";
 
-const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 export const getGoogleAuthUrl = () => `${BASE_API_URL}/auth/google`;
 
