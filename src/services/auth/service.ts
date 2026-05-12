@@ -2,7 +2,7 @@ import axios from "axios";
 import { ApiErrorResponse } from "../interfaces/error/interface"
 import { LoginPayload, LoginResponse, SignUpPayload, SignUpResponse } from "../interfaces/auth/interface";
 
-const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 export const getGoogleAuthUrl = () => `${BASE_API_URL}/auth/google`;
 
